@@ -7,7 +7,7 @@ try:
 except ImportError:
     import json
 
-from telebot import util
+from telebot import apihelper, util
 
 DISABLE_KEYLEN_ERROR = False
 
@@ -105,11 +105,12 @@ class Update(JsonDeserializable):
         pre_checkout_query = PreCheckoutQuery.de_json(obj.get('pre_checkout_query'))
         poll = Poll.de_json(obj.get('poll'))
         poll_answer = PollAnswer.de_json(obj.get('poll_answer'))
+        my_chat_member = MyChatMember.de_json(obj)
         return cls(update_id, message, edited_message, channel_post, edited_channel_post, inline_query,
-                   chosen_inline_result, callback_query, shipping_query, pre_checkout_query, poll, poll_answer)
+                   chosen_inline_result, callback_query, shipping_query, pre_checkout_query, poll, poll_answer,my_chat_member)
 
     def __init__(self, update_id, message, edited_message, channel_post, edited_channel_post, inline_query,
-                 chosen_inline_result, callback_query, shipping_query, pre_checkout_query, poll, poll_answer):
+                 chosen_inline_result, callback_query, shipping_query, pre_checkout_query, poll, poll_answer,my_chat_member):
         self.update_id = update_id
         self.message = message
         self.edited_message = edited_message
@@ -122,7 +123,7 @@ class Update(JsonDeserializable):
         self.pre_checkout_query = pre_checkout_query
         self.poll = poll
         self.poll_answer = poll_answer
-
+        self.my_chat_member = my_chat_member
 
 class WebhookInfo(JsonDeserializable):
     @classmethod
@@ -361,15 +362,7 @@ class Message(JsonDeserializable):
         if 'dice' in obj:
             opts['dice'] = Dice.de_json(obj['dice'])
             content_type = 'dice'
-        if 'new_chat_members' in obj:
-            new_chat_members = []
-            for member in obj['new_chat_members']:
-                new_chat_members.append(User.de_json(member))
-            opts['new_chat_members'] = new_chat_members
-            content_type = 'new_chat_members'
-        if 'left_chat_member' in obj:
-            opts['left_chat_member'] = User.de_json(obj['left_chat_member'])
-            content_type = 'left_chat_member'
+
         if 'new_chat_title' in obj:
             opts['new_chat_title'] = obj['new_chat_title']
             content_type = 'new_chat_title'
@@ -472,6 +465,7 @@ class Message(JsonDeserializable):
         self.dice = None
         self.new_chat_member = None  # Deprecated since Bot API 3.0. Not processed anymore
         self.new_chat_members = None
+        self.my_chat_members = None
         self.left_chat_member = None
         self.new_chat_title = None
         self.new_chat_photo = None
@@ -2624,3 +2618,327 @@ class PollAnswer(JsonSerializable, JsonDeserializable, Dictionaryable):
         return {'poll_id': self.poll_id,
                 'user': self.user.to_dict(),
                 'options_ids': self.options_ids}
+
+
+class OldChatMember(JsonDeserializable):
+
+    @classmethod
+    def de_json(cls, json_string):
+        if (json_string is None): return None
+
+        if json_string.get("old_chat_member"):
+            obj = Message.check_json(json_string)
+            user = User.de_json(obj['old_chat_member'].get('user'))
+            return cls(user,obj.get('old_chat_member'))
+
+    def __init__(self,user,options):
+        self.user = user
+        self.status = None #“creator”, “administrator”, “member”, “restricted”, “left” or “kicked”
+        self.custom_title = None
+        self.can_be_edited = None
+        self.can_manage_chat = None
+        self.can_change_info = None
+        self.can_post_messages = None
+        self.can_edit_messages = None
+        self.can_delete_messages = None
+        self.can_invite_users = None
+        self.can_restrict_members = None
+        self.can_promote_members = None
+        self.can_manage_voice_chats = None
+        self.can_pin_messages = None
+        self.can_send_messages = None
+        self.can_send_media_messages = None
+        self.can_send_polls = None
+        self.can_send_other_messages = None
+        self.can_add_web_page_previews = None
+        self.is_anonymous = None
+        self.util_date = None
+        self.is_member = None
+
+        for key in options:
+            setattr(self, key, options[key])
+    def to_json(self):
+        return json.dumps(self.to_dict())
+
+    def to_dict(self):
+        return {"status":self.status,
+         "can_be_edited":self.can_be_edited,
+         "can_manage_chat":self.can_manage_chat,
+         "can_change_info":self.can_change_info,
+         "can_post_messages":self.can_post_messages,
+         "can_edit_messages":self.can_edit_messages,
+         "can_delete_messages":self.can_delete_messages,
+         "can_invite_users":self.can_invite_users,
+         "can_restrict_members":self.can_restrict_members,
+         "can_promote_members":self.can_promote_members,
+         "can_manage_voice_chats":self.can_manage_voice_chats,
+         "is_anonymous":self.is_anonymous,
+         "can_pin_messages":self.can_pin_messages,
+         "can_send_messages":self.can_send_messages,
+         "can_send_media_messages":self.can_send_media_messages,
+         "can_send_polls":self.can_send_polls,
+         "can_send_other_messages":self.can_send_other_messages,
+         "can_add_web_page_previews":self.can_add_web_page_previews,
+         "is_member":self.is_member,
+         "util_date":self.util_date
+         }
+
+
+class NewChatMember(JsonDeserializable):
+
+    @classmethod
+    def de_json(cls, json_string):
+        if (json_string is None): return None
+        if json_string.get("new_chat_member"):
+            obj = Message.check_json(json_string)
+            user = User.de_json(obj['new_chat_member'].get('user'))
+            return cls(user,obj.get('new_chat_member'))
+        else:
+            return None
+    def __init__(self,user,options):
+        self.user = user
+        self.status = None #“creator”, “administrator”, “member”, “restricted”, “left” or “kicked”
+        self.custom_title = None
+        self.can_be_edited = None
+        self.can_manage_chat = None
+        self.can_change_info = None
+        self.can_post_messages = None
+        self.can_edit_messages = None
+        self.can_delete_messages = None
+        self.can_invite_users = None
+        self.can_restrict_members = None
+        self.can_promote_members = None
+        self.can_manage_voice_chats = None
+        self.can_pin_messages = None
+        self.can_send_messages = None
+        self.can_send_media_messages = None
+        self.can_send_polls = None
+        self.can_send_other_messages = None
+        self.can_add_web_page_previews = None
+        self.is_anonymous = None
+        self.util_date = None
+        self.is_member = None
+
+        for key in options:
+            setattr(self, key, options[key])
+    def to_json(self):
+        return json.dumps(self.to_dict())
+
+    def to_dict(self):
+        return {"status":self.status,
+         "can_be_edited":self.can_be_edited,
+         "can_manage_chat":self.can_manage_chat,
+         "can_change_info":self.can_change_info,
+         "can_post_messages":self.can_post_messages,
+         "can_edit_messages":self.can_edit_messages,
+         "can_delete_messages":self.can_delete_messages,
+         "can_invite_users":self.can_invite_users,
+         "can_restrict_members":self.can_restrict_members,
+         "can_promote_members":self.can_promote_members,
+         "can_manage_voice_chats":self.can_manage_voice_chats,
+         "is_anonymous":self.is_anonymous,
+         "can_pin_messages":self.can_pin_messages,
+         "can_send_messages":self.can_send_messages,
+         "can_send_media_messages":self.can_send_media_messages,
+         "can_send_polls":self.can_send_polls,
+         "can_send_other_messages":self.can_send_other_messages,
+         "can_add_web_page_previews":self.can_add_web_page_previews,
+         "is_member":self.is_member,
+         "util_date":self.util_date
+         }
+
+class MyChatMember(JsonDeserializable):
+    @classmethod
+    def de_json(cls,json_string):
+        if (json_string is None): return None
+        if json_string.get("my_chat_member"):
+            obj = Message.check_json(json_string)
+            from_user = User.de_json(obj['my_chat_member'].get('from'))
+            date = obj['my_chat_member'].get('date')
+            chat = Chat.de_json(obj['my_chat_member'].get('chat'))
+            old_chat_member = OldChatMember.de_json(obj["my_chat_member"])
+            new_chat_member = NewChatMember.de_json(obj["my_chat_member"])
+
+            content_type = 'my_chat_member'
+
+            if chat.type == 'channel':
+                if new_chat_member.status == "administrator":
+                    if old_chat_member.status == "administrator":
+                        content_type = "bot_promitions_edited_in_channel"
+                    else:
+                        content_type = "bot_joins_channel"
+
+                elif new_chat_member.status == "left":
+                    content_type = "bot_removed_from_channel"
+
+            elif chat.type == 'group' or chat.type == 'supergroup':
+
+                if new_chat_member.status == "member":
+                    if old_chat_member == "administrator":
+                        content_type = "bot_group_admin_to_member"
+                    else:
+                        content_type = "bot_joins_group"
+
+                elif new_chat_member.status == "left":
+                    content_type = "bot_left_group"
+
+                elif new_chat_member.status == "administrator":
+                    if old_chat_member.status == "administrator":
+                        content_type = "bot_promitions_edited_in_group"
+                    else:
+                        content_type = "bot_upgraded_to_group_admin"
+
+                elif new_chat_member.status == "restricted":
+                    content_type = "group_restricted_bot"
+
+                elif new_chat_member.status == "kicked":
+                    content_type = "group_kicked_bot" 
+
+            elif chat.type == 'private':
+                if new_chat_member.status == "kicked":
+                    content_type = "user_blocks_bot" 
+                elif new_chat_member.status == "member" and old_chat_member.status == "kicked":
+                    content_type = "user_unblocks_bot"
+
+            invite_link = ChatInviteLink.de_json(obj['my_chat_member'])
+
+            return cls(chat,from_user,content_type,date,old_chat_member,new_chat_member,invite_link,json_string)
+        elif json_string.get("chat_member"):
+            obj = Message.check_json(json_string)
+            from_user = User.de_json(obj['chat_member'].get('from'))
+            date = obj['chat_member'].get('date')
+            chat = Chat.de_json(obj['chat_member'].get('chat'))
+            old_chat_member = OldChatMember.de_json(obj["chat_member"])
+            new_chat_member = NewChatMember.de_json(obj["chat_member"])
+            content_type = 'chat_member'
+
+
+            if chat.type == 'channel':
+                if new_chat_member.status == "member":
+                    if old_chat_member.status == "administrator":
+                        content_type = "channel_admin_to_member"
+                    else:
+                        content_type = "channel_new_member"
+
+                elif new_chat_member.status == "left":
+                    if old_chat_member.status == "member":
+                        content_type = "channel_member_left"
+                    elif old_chat_member.status == "creator":
+                        content_type = "channel_creator_left"
+                    elif old_chat_member.status == "administrator":
+                        content_type = "channel_admin_left"
+
+                elif new_chat_member.status == "administrator":
+                    if old_chat_member.status == "administrator":
+                        content_type = "channel_admin_promitions_edited"
+                    else:
+                        content_type = "channel_new_admin"
+                elif new_chat_member.status == 'creator':
+                    content_type = "channel_creator"
+
+            elif chat.type == 'group' or chat.type == 'supergroup':
+
+                if new_chat_member.status == "member":
+                    if old_chat_member.status == "restricted":
+                        content_type = "group_unrestricted_member"
+                    elif old_chat_member.status == "administrator":
+                        content_type = "group_admin_to_member"
+                    else:
+                        content_type = "group_new_member"
+
+                elif new_chat_member.status == "left":
+                    if old_chat_member.status == "member":
+                        content_type = "group_member_left"
+                    elif old_chat_member.status == "creator":
+                        content_type = "group_creator_left"
+                    elif old_chat_member.status == "administrator":
+                        content_type = "group_admin_left"
+
+                elif new_chat_member.status == "administrator":
+                    if old_chat_member.status == "administrator":
+                        content_type = "group_admin_promitions_edited"
+                    else:
+                        content_type = "group_new_admin"
+
+                elif new_chat_member.status == "restricted":
+                    if old_chat_member.status == "restricted":
+                        if old_chat_member.is_member == True and new_chat_member.is_member == False:
+                            content_type = "group_restricted_member_left"
+                        elif old_chat_member.is_member == False and new_chat_member.is_member == True:
+                            content_type = "group_restricted_member_joins"
+                        else:
+                            content_type = "group_restricted_member"
+                    elif old_chat_member.status == "administrator":
+                        content_type = "group_admin_restricted"
+                    else:
+                        content_type = "group_restricted_member"
+                elif new_chat_member.status == "kicked":
+                    content_type = "group_member_kicked"
+
+                elif new_chat_member.status == "creator":
+                    content_type = "group_creator"
+
+            invite_link = ChatInviteLink.de_json(obj['chat_member'])
+
+            return cls(chat,from_user,content_type,date,old_chat_member,new_chat_member,invite_link,json_string)
+        else:return None
+
+    def __init__(self,chat,from_user,content_type,date,old_chat_member,new_chat_member,invite_link,json_string):
+        self.content_type = content_type
+        self.chat = chat
+        self.from_user = from_user
+        self.date = date 
+        self.old_chat_member = old_chat_member
+        self.new_chat_member = new_chat_member
+        self.invite_link = invite_link
+        self.json_string = json_string
+
+
+
+    def to_json(self):
+        return json.dumps(self.to_dict())
+
+    def to_dict(self):
+        return {
+                'content_type':self.content_type,
+                'chat': self.chat,
+                'from_user': self.is_bot,
+                'date': self.date,
+                'old_chat_member': self.old_chat_member,
+                'new_chat_member': self.new_chat_member,
+                'invite_link': self.invite_link
+                }
+
+
+class ChatInviteLink(JsonDeserializable):
+    @classmethod
+    def de_json(cls, json_string):
+        if (json_string is None): return None
+        obj = cls.check_json(json_string)
+        invite_link = obj.get("invite_link")
+        creator = User.de_json(obj.get("creator"))
+        is_primary = obj.get("is_primary")
+        is_revoked = obj.get("is_revoked")
+        expire_date = obj.get("expire_date")
+        member_limit = obj.get("member_limit")
+        return cls(invite_link, creator, is_primary, is_revoked, expire_date, member_limit)
+
+    def __init__(self, invite_link, creator, is_primary, is_revoked, expire_date, member_limit):
+        """
+        This object represents an invite link for a chat.
+        :param invite_link: The invite link. If the link was created by another chat administrator,
+        then the second part of the link will be replaced with “…”.
+        :param creator: User: Creator of the link
+        :param is_primary: True, if the link is primary
+        :param is_revoked: True, if the link is revoked
+        :param expire_date: Point in time (Unix timestamp) when the link will expire or has been expired
+        :param member_limit: Maximum number of users that can be members of the chat simultaneously
+        after joining the chat via this invite link; 1-99999
+        :return:
+        """
+        self.invite_link = invite_link
+        self.creator = creator
+        self.is_primary = is_primary
+        self.is_revoked = is_revoked
+        self.expire_date = expire_date
+        self.member_limit = member_limit

@@ -136,6 +136,8 @@ class TeleBot:
         self.poll_handlers = []
         self.poll_answer_handlers = []
 
+        self.chat_member_handlers = []
+
         if apihelper.ENABLE_MIDDLEWARE:
             self.typed_middleware_handlers = {
                 'message': [],
@@ -148,6 +150,7 @@ class TeleBot:
                 'shipping_query': [],
                 'pre_checkout_query': [],
                 'poll': [],
+                'my_chat_member':[]
             }
             self.default_middleware_handlers = []
 
@@ -341,7 +344,7 @@ class TeleBot:
         new_pre_checkout_queries = None
         new_polls = None
         new_poll_answers = None
-        
+        my_chat_members = None
         for update in updates:
             if apihelper.ENABLE_MIDDLEWARE:
                 try:
@@ -359,6 +362,11 @@ class TeleBot:
             if update.message:
                 if new_messages is None: new_messages = []
                 new_messages.append(update.message)
+
+            if update.my_chat_member:
+                if my_chat_members is None: my_chat_members = []
+                my_chat_members.append(update.my_chat_member)
+
             if update.edited_message:
                 if new_edited_messages is None: new_edited_messages = []
                 new_edited_messages.append(update.edited_message)
@@ -392,6 +400,10 @@ class TeleBot:
 
         if new_messages:
             self.process_new_messages(new_messages)
+
+        if my_chat_members:
+            self.process_new_my_chat_member(my_chat_members)
+
         if new_edited_messages:
             self.process_new_edited_messages(new_edited_messages)
         if new_channel_posts:
@@ -418,6 +430,9 @@ class TeleBot:
         self._notify_reply_handlers(new_messages)
         self.__notify_update(new_messages)
         self._notify_command_handlers(self.message_handlers, new_messages)
+
+    def process_new_my_chat_member(self,my_chat_member):
+        self._notify_command_handlers(self.chat_member_handlers, my_chat_member)
 
     def process_new_edited_messages(self, edited_message):
         self._notify_command_handlers(self.edited_message_handlers, edited_message)
@@ -1246,46 +1261,6 @@ class TeleBot:
         """
         return apihelper.set_chat_permissions(self.token, chat_id, permissions)
 
-    def create_chat_invite_link(self, chat_id, expire_date=None, member_limit=None):
-        """
-        Use this method to create an additional invite link for a chat.
-        The bot must be an administrator in the chat for this to work and must have the appropriate admin rights.
-
-        :param chat_id: Id: Unique identifier for the target chat or username of the target channel
-            (in the format @channelusername)
-        :expire_date: Point in time (Unix timestamp) when the link will expire
-        :member_limit: Maximum number of users that can be members of the chat simultaneously
-        :return:
-        """
-        return apihelper.create_chat_invite_link(self.token, chat_id, expire_date, member_limit)
-
-    def edit_chat_invite_link(self, chat_id, invite_link, expire_date=None, member_limit=None):
-        """
-        Use this method to edit a non-primary invite link created by the bot.
-        The bot must be an administrator in the chat for this to work and must have the appropriate admin rights.
-
-        :param chat_id: Id: Unique identifier for the target chat or username of the target channel
-            (in the format @channelusername)
-        :invite_link: The invite link to edit
-        :expire_date: Point in time (Unix timestamp) when the link will expire
-        :member_limit: Maximum number of users that can be members of the chat simultaneously
-        :return:
-        """
-        return apihelper.edit_chat_invite_link(self.token, chat_id, invite_link, expire_date, member_limit)
-
-    def revoke_chat_invite_link(self, chat_id, invite_link):
-        """
-        Use this method to revoke an invite link created by the bot.
-        Note: If the primary link is revoked, a new link is automatically generated The bot must be an administrator 
-            in the chat for this to work and must have the appropriate admin rights.
-
-        :param chat_id: Id: Unique identifier for the target chat or username of the target channel
-            (in the format @channelusername)
-        :invite_link: The invite link to revoke
-        :return:
-        """
-        return apihelper.revoke_chat_invite_link(self.token, chat_id, invite_link)
-
     def export_chat_invite_link(self, chat_id):
         """
         Use this method to export an invite link to a supergroup or a channel. The bot must be an administrator
@@ -1910,6 +1885,107 @@ class TeleBot:
         else:
             self.default_middleware_handlers.append(handler)
 
+
+    def add_chat_member_handler(self, handler_dict):
+        self.chat_member_handlers.append(handler_dict)
+
+    def chat_member_handler(self,func=None,content_types=None,**kwargs):
+        '''
+        This Method handle chatmember status
+            content_types:
+[
+    'user_blocks_bot',
+    'user_unblocks_bot',
+
+    'group_member_left',
+    'group_new_member',
+    'group_creator_left',
+    'group_admin_left',
+    'group_member_kicked',
+    'group_new_admin',
+    'group_creator',
+    'group_restricted_bot',
+    'group_restricted_member',
+    'group_kicked_bot',
+    'group_admin_promitions_edited',    
+    'group_unrestricted_member',
+    'group_restricted_member_left',
+    'group_restricted_member_joins',
+    'group_admin_to_member',
+    'group_admin_restricted',
+
+    'bot_joins_group',
+    'bot_left_group',    
+    'bot_joins_channel',
+    'bot_removed_from_channel',
+    'bot_promitions_edited_in_group',
+    'bot_upgraded_to_group_admin',
+    'bot_group_admin_to_member',
+    'bot_promitions_edited_in_channel',
+    
+    'channel_new_member',
+    'channel_member_left',
+    'channel_creator_left',
+    'channel_admin_left',
+    'channel_new_admin',
+    'channel_creator',
+    'channel_admin_to_member',
+    'channel_admin_promitions_edited'
+]        
+'''
+        if content_types is None:
+            content_types = [
+    'my_chat_member',
+    'chat_member',
+
+    'user_blocks_bot',
+    'user_unblocks_bot',
+
+    'group_member_left',
+    'group_new_member',
+    'group_creator_left',
+    'group_admin_left',
+    'group_member_kicked',
+    'group_new_admin',
+    'group_creator',
+    'group_restricted_bot',
+    'group_restricted_member',
+    'group_kicked_bot',
+    'group_admin_promitions_edited',    
+    'group_unrestricted_member',
+    'group_restricted_member_left',
+    'group_restricted_member_joins',
+    'group_admin_to_member',
+    'group_admin_restricted',
+
+    'bot_joins_group',
+    'bot_left_group',    
+    'bot_joins_channel',
+    'bot_removed_from_channel',
+    'bot_promitions_edited_in_group',
+    'bot_upgraded_to_group_admin',
+    'bot_group_admin_to_member',
+    'bot_promitions_edited_in_channel',
+    
+    'channel_new_member',
+    'channel_member_left',
+    'channel_creator_left',
+    'channel_admin_left',
+    'channel_new_admin',
+    'channel_creator',
+    'channel_admin_to_member',
+    'channel_admin_promitions_edited'
+]
+
+        def decorator(handler):
+            handler_dict = self._build_handler_dict(handler,
+                                                    content_types=content_types,
+                                                    func=func,
+                                                    **kwargs)
+            self.add_chat_member_handler(handler_dict)
+            return handler
+        return decorator
+
     def message_handler(self, commands=None, regexp=None, func=None, content_types=None, **kwargs):
         """
         Message handler decorator.
@@ -1955,6 +2031,7 @@ class TeleBot:
             return handler
 
         return decorator
+
 
     def add_message_handler(self, handler_dict):
         """

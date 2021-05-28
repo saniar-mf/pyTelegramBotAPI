@@ -1,6 +1,6 @@
 # <p align="center">pyTelegramBotAPI
 
-<p align="center">A simple, but extensible Python implementation for the <a href="https://core.telegram.org/bots/api">Telegram Bot API</a>.
+<p align="center">New pyTelegramBotAPI(Telebot) with chat_member_handler feature</a>.
 
 [![PyPi Package Version](https://img.shields.io/pypi/v/pyTelegramBotAPI.svg)](https://pypi.python.org/pypi/pyTelegramBotAPI)
 [![Supported Python versions](https://img.shields.io/pypi/pyversions/pyTelegramBotAPI.svg)](https://pypi.python.org/pypi/pyTelegramBotAPI)
@@ -100,6 +100,13 @@ def echo_all(message):
 This one echoes all incoming text messages back to the sender. It uses a lambda function to test a message. If the lambda returns True, the message is handled by the decorated function. Since we want all messages to be handled by this function, we simply always return True.
 
 *Note: all handlers are tested in the order in which they were declared*
+For getting chat_member updates you can use  `chat_member_handler`.
+```python
+@bot.chat_member_handler(func=None, content_types=["bot_joins_group"])
+def SayHelloToGroup(message):
+	bot.send_message(message.chat.id,"Hi I'M Telebot :)")
+```
+there is 36 content type for chat member:`'my_chat_member', 'chat_member', 'user_blocks_bot', 'user_unblocks_bot', 'group_member_left', 'group_new_member', 'group_creator_left', 'group_admin_left', 'group_member_kicked', 'group_new_admin', 'group_creator', 'group_restricted_bot', 'group_restricted_member', 'group_kicked_bot', 'group_admin_promitions_edited', 'group_unrestricted_member', 'group_restricted_member_left', 'group_restricted_member_joins', 'group_admin_to_member', 'group_admin_restricted', 'bot_joins_group', 'bot_left_group', 'bot_joins_channel', 'bot_removed_from_channel', 'bot_promitions_edited_in_group', 'bot_upgraded_to_group_admin', 'bot_group_admin_to_member', 'bot_promitions_edited_in_channel', 'channel_new_member', 'channel_member_left', 'channel_creator_left', 'channel_admin_left', 'channel_new_admin', 'channel_creator', 'channel_admin_to_member', 'channel_admin_promitions_edited'`
 
 We now have a basic bot which replies a static message to "/start" and "/help" commands and which echoes the rest of the sent messages. To start the bot, add the following to our source file:
 ```python

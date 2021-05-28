@@ -2632,7 +2632,7 @@ class OldChatMember(JsonDeserializable):
             return cls(user,obj.get('old_chat_member'))
 
     def __init__(self,user,options):
-        self.user = user
+        self.from_user = user
         self.status = None #“creator”, “administrator”, “member”, “restricted”, “left” or “kicked”
         self.custom_title = None
         self.can_be_edited = None
@@ -2696,7 +2696,7 @@ class NewChatMember(JsonDeserializable):
         else:
             return None
     def __init__(self,user,options):
-        self.user = user
+        self.from_user = user
         self.status = None #“creator”, “administrator”, “member”, “restricted”, “left” or “kicked”
         self.custom_title = None
         self.can_be_edited = None
